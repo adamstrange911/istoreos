@@ -1,75 +1,111 @@
-# SPDX-License-Identifier: GPL-2.0-only
-#
-# Copyright (C) 2020 Tobias Maedel
+#!/bin/bash
+#===============================================
+# Description: DIY script
+# File name: diy-script.sh
+# Lisence: MIT
+# Author: P3TERX
+# Blog: https://p3terx.com
+#===============================================
 
-define Device/friendlyarm_nanopi-r2s
-  DEVICE_VENDOR := FriendlyARM
-  DEVICE_MODEL := NanoPi R2S
-  SOC := rk3328
-  UBOOT_DEVICE_NAME := nanopi-r2s-rk3328
-  IMAGE/sysupgrade.img.gz := boot-common | boot-script nanopi-r2s | pine64-img | gzip | append-metadata
-  DEVICE_PACKAGES := kmod-usb-net-rtl8152 ethtool
-endef
-TARGET_DEVICES += friendlyarm_nanopi-r2s
+# 删除引起iproute2依赖编译报错的补丁
+[ -e package/libs/elfutils/patches/999-fix-odd-build-oot-kmod-fail.patch ] && rm -f package/libs/elfutils/patches/999-fix-odd-build-oot-kmod-fail.patch
 
-define Device/friendlyarm_nanopi-r4s
-  DEVICE_VENDOR := FriendlyARM
-  DEVICE_MODEL := NanoPi R4S
-  DEVICE_VARIANT := 4GB LPDDR4
+# update ubus git HEAD
+cp -f $GITHUB_WORKSPACE/configfiles/ubus_Makefile package/system/ubus/Makefile
+
+# 近期istoreos网站文件服务器不稳定，临时增加一个自定义下载网址
+# sed -i "s/push @mirrors, 'https:\/\/mirror2.openwrt.org\/sources';/&\\npush @mirrors, 'https:\/\/github.com\/xiaomeng9597\/files\/releases\/download\/iStoreosFile';/g" scripts/download.pl
+
+
+#修改uhttpd配置文件，启用nginx
+# sed -i "/.*uhttpd.*/d" .config
+# sed -i '/.*\/etc\/init.d.*/d' package/network/services/uhttpd/Makefile
+# sed -i '/.*.\/files\/uhttpd.init.*/d' package/network/services/uhttpd/Makefile
+sed -i "s/:80/:81/g" package/network/services/uhttpd/files/uhttpd.config
+sed -i "s/:443/:4443/g" package/network/services/uhttpd/files/uhttpd.config
+cp -a $GITHUB_WORKSPACE/configfiles/etc/* package/base-files/files/etc/ 
+ls package/base-files/files/etc/
+
+
+
+
+
+
+# 移植以下机型
+# RK3399 orangepi
+# RK3399 tvi3315a
+
+echo -e "\\ndefine Device/rk3399_orangepi
+  DEVICE_VENDOR := RK3399
+  DEVICE_MODEL := orangepi
   SOC := rk3399
-  UBOOT_DEVICE_NAME := nanopi-r4s-rk3399
-  IMAGE/sysupgrade.img.gz := boot-common | boot-script nanopi-r4s | pine64-img | gzip | append-metadata
-  DEVICE_PACKAGES := kmod-r8168 kmod-hwmon-pwmfan kmod-thermal
-endef
-TARGET_DEVICES += friendlyarm_nanopi-r4s
-
-define Device/friendlyarm_nanopi-r4se
-  DEVICE_VENDOR := FriendlyARM
-  DEVICE_MODEL := NanoPi R4SE
-  DEVICE_VARIANT := 4GB LPDDR4
-  SOC := rk3399
-  UBOOT_DEVICE_NAME := nanopi-r4se-rk3399
-  IMAGE/sysupgrade.img.gz := boot-common | boot-script nanopi-r4s | pine64-img | gzip | append-metadata
-  DEVICE_PACKAGES := kmod-r8168 kmod-hwmon-pwmfan kmod-thermal
-endef
-TARGET_DEVICES += friendlyarm_nanopi-r4se
-
-define Device/pine64_rockpro64
-  DEVICE_VENDOR := Pine64
-  DEVICE_MODEL := RockPro64
-  SOC := rk3399
-  UBOOT_DEVICE_NAME := rockpro64-rk3399
+  SUPPORTED_DEVICES := rk3399,orangepi
+  UBOOT_DEVICE_NAME := orangepi-rk3399
   IMAGE/sysupgrade.img.gz := boot-common | boot-script | pine64-img | gzip | append-metadata
 endef
-TARGET_DEVICES += pine64_rockpro64
+TARGET_DEVICES += rk3399_orangepi" >> target/linux/rockchip/image/armv8.mk
 
-define Device/radxa_rock-pi-4a
-  DEVICE_VENDOR := Radxa
-  DEVICE_MODEL := ROCK Pi 4A
+
+echo -e "\\ndefine Device/rk3399_tvi3315a
+  DEVICE_VENDOR := RK3399
+  DEVICE_MODEL := tvi3315a
   SOC := rk3399
-  SUPPORTED_DEVICES := radxa,rockpi4a radxa,rockpi4
-  UBOOT_DEVICE_NAME := rock-pi-4-rk3399
+  SUPPORTED_DEVICES := rk3399,tvi3315a
+  UBOOT_DEVICE_NAME := tvi3315a-rk3399
   IMAGE/sysupgrade.img.gz := boot-common | boot-script | pine64-img | gzip | append-metadata
 endef
-TARGET_DEVICES += radxa_rock-pi-4a
+TARGET_DEVICES += rk3399_tvi3315a" >> target/linux/rockchip/image/armv8.mk
 
-define Device/rockchip_rk3308_evb
-  DEVICE_VENDOR := Rochckip
-  DEVICE_MODEL := RK3308 EVB
-  SOC := rk3308
-  UBOOT_DEVICE_NAME := evb-rk3308
-  IMAGE/sysupgrade.img.gz := boot-common | boot-script rk3308 | pine64-img | gzip | append-metadata
-  DEVICE_PACKAGES := kmod-usb-net-rtl8152 ethtool
-endef
-TARGET_DEVICES += rockchip_rk3308_evb
 
-define Device/armsom_p2-pro
-  DEVICE_VENDOR := ArmSoM
-  DEVICE_MODEL := P2 Pro
-  SOC := rk3308
-  SUPPORTED_DEVICES := armsom,p2pro armsom,p2-pro
-  UBOOT_DEVICE_NAME := easepi-rk3308
-  IMAGE/sysupgrade.img.gz := boot-common | boot-script rk3308-uart2 | pine64-img | gzip | append-metadata
-  DEVICE_PACKAGES := kmod-usb-net-rtl8152 ethtool kmod-rkwifi-bcmdhd rkwifi-firmware-ap6256 kmod-sound-soc-rk3308
-endef
-TARGET_DEVICES += armsom_p2-pro
+
+
+
+# 网口配置为旁路由模式，注释下面两个网口模式替换命令后，网口模式会变成主路由模式，不知道什么原因理论应该全部变成旁路由模式的，但对于RK3399 orangepi机型网口模式还是主路由模式，没深度研究过，你们自己测试然后修改吧。
+sed -i "s/armsom,p2pro)/armsom,p2pro|\\\\\n	rk3399,orangepi)/g" target/linux/rockchip/armv8/base-files/etc/board.d/02_network
+sed -i "s/rk3399,orangepi)/rk3399,orangepi|\\\\\n	rk3399,tvi3315a)/g" target/linux/rockchip/armv8/base-files/etc/board.d/02_network
+
+
+
+
+# 复制和修改u-boot压缩包SHA256校验码，编译失败时注意看是不是这个引起的。
+cp -f $GITHUB_WORKSPACE/configfiles/uboot_Makefile package/boot/uboot-rockchip/Makefile
+cp -f $GITHUB_WORKSPACE/configfiles/u-boot.mk include/u-boot.mk
+# sha256_value=$(wget -qO- "https://github.com/xiaomeng9597/files/releases/download/u-boot-2021.07/u-boot-2021.07.tar.bz2.sha" | awk '{print $1}')
+# if [ -n "$sha256_value" ]; then
+# sed -i "s/.*PKG_HASH:=.*/PKG_HASH:=$sha256_value/g" package/boot/uboot-rockchip/Makefile
+# fi
+
+
+
+
+
+# 复制defconfig配置文件到u-boot目录里面
+cp -f $GITHUB_WORKSPACE/configfiles/orangepi-rk3399_defconfig package/boot/uboot-rockchip/src/configs/orangepi-rk3399_defconfig
+cp -f $GITHUB_WORKSPACE/configfiles/tvi3315a-rk3399_defconfig package/boot/uboot-rockchip/src/configs/tvi3315a-rk3399_defconfig
+ls package/boot/uboot-rockchip/src/configs/
+
+
+# 复制对应的dts设备树文件到指定目录和u-boot目录里面
+cp -f $GITHUB_WORKSPACE/configfiles/rk3399.dtsi target/linux/rockchip/armv8/files/arch/arm64/boot/dts/rockchip/rk3399.dtsi
+cp -f $GITHUB_WORKSPACE/configfiles/rk3399-opp.dtsi target/linux/rockchip/armv8/files/arch/arm64/boot/dts/rockchip/rk3399-opp.dtsi
+cp -f $GITHUB_WORKSPACE/configfiles/rk3399-orangepi.dts target/linux/rockchip/armv8/files/arch/arm64/boot/dts/rockchip/rk3399-orangepi.dts
+cp -f $GITHUB_WORKSPACE/configfiles/rk3399-tvi3315a.dts target/linux/rockchip/armv8/files/arch/arm64/boot/dts/rockchip/rk3399-tvi3315a.dts
+ls target/linux/rockchip/armv8/files/arch/arm64/boot/dts/rockchip/
+
+cp -f $GITHUB_WORKSPACE/configfiles/rk3399.dtsi package/boot/uboot-rockchip/src/arch/arm/dts/rk3399.dtsi
+cp -f $GITHUB_WORKSPACE/configfiles/rk3399-opp.dtsi package/boot/uboot-rockchip/src/arch/arm/dts/rk3399-opp.dtsi
+cp -f $GITHUB_WORKSPACE/configfiles/rk3399-orangepi.dts package/boot/uboot-rockchip/src/arch/arm/dts/rk3399-orangepi.dts
+cp -f $GITHUB_WORKSPACE/configfiles/rk3399-tvi3315a.dts package/boot/uboot-rockchip/src/arch/arm/dts/rk3399-tvi3315a.dts
+ls package/boot/uboot-rockchip/src/arch/arm/dts/
+
+
+#不开启无线功能，已移除Realtek相关无线驱动，这个暂时不可用，原因兼容性不好，会异常掉线
+# cp -f $GITHUB_WORKSPACE/configfiles/opwifi package/base-files/files/etc/init.d/opwifi
+# chmod 755 package/base-files/files/etc/init.d/opwifi
+# sed -i "s/wireless.radio\${devidx}.disabled=1/wireless.radio\${devidx}.disabled=0/g" package/kernel/mac80211/files/lib/wifi/mac80211.sh
+
+
+#集成CPU性能跑分脚本
+cp -a $GITHUB_WORKSPACE/configfiles/coremark/* package/base-files/files/bin/
+chmod 755 package/base-files/files/bin/coremark
+chmod 755 package/base-files/files/bin/coremark.sh
