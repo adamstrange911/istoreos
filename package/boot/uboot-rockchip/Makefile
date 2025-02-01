@@ -25,14 +25,15 @@ endef
 
 # RK3308 boards
 
-define U-Boot/tvi3315a-rk3399
+define U-Boot/evb-rk3308
   BUILD_SUBTARGET:=armv8
-  NAME:=RK3399 tvi3315a
+  NAME:=RK3308 EVB
   BUILD_DEVICES:= \
-    rk3399_tvi3315a
-  DEPENDS:=+PACKAGE_u-boot-tvi3315a-rk3399:arm-trusted-firmware-rockchip
-  PKG_BUILD_DEPENDS:=arm-trusted-firmware-rockchip
-  ATF:=rk3399_bl31.elf
+    rockchip_rk3308_evb
+  DEPENDS:=+PACKAGE_u-boot-evb-rk3308:trusted-firmware-a-rk3308
+  PKG_BUILD_DEPENDS:=arm-trusted-firmware-rockchip-vendor
+  ATF:=$(RK3308_ATF)
+  DDR:=$(RK3308_DDR)
 endef
 
 define U-Boot/armsom-rk3308
@@ -63,12 +64,12 @@ endef
 
 # RK3399 boards
 
-define U-Boot/nanopi-r4s-rk3399
+define U-Boot/tvi3315a-rk3399
   BUILD_SUBTARGET:=armv8
-  NAME:=NanoPi R4S
+  NAME:=RK3399 tvi3315a
   BUILD_DEVICES:= \
-    friendlyarm_nanopi-r4s
-  DEPENDS:=+PACKAGE_u-boot-nanopi-r4s-rk3399:arm-trusted-firmware-rockchip
+    rk3399_tvi3315a
+  DEPENDS:=+PACKAGE_u-boot-tvi3315a-rk3399:arm-trusted-firmware-rockchip
   PKG_BUILD_DEPENDS:=arm-trusted-firmware-rockchip
   ATF:=rk3399_bl31.elf
 endef
