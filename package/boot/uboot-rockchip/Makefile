@@ -25,15 +25,14 @@ endef
 
 # RK3308 boards
 
-define U-Boot/evb-rk3308
+define U-Boot/tvi3315a-rk3399
   BUILD_SUBTARGET:=armv8
-  NAME:=RK3308 EVB
+  NAME:=RK3399 tvi3315a
   BUILD_DEVICES:= \
-    rockchip_rk3308_evb
-  DEPENDS:=+PACKAGE_u-boot-evb-rk3308:trusted-firmware-a-rk3308
-  PKG_BUILD_DEPENDS:=arm-trusted-firmware-rockchip-vendor
-  ATF:=$(RK3308_ATF)
-  DDR:=$(RK3308_DDR)
+    rk3399_tvi3315a
+  DEPENDS:=+PACKAGE_u-boot-tvi3315a-rk3399:arm-trusted-firmware-rockchip
+  PKG_BUILD_DEPENDS:=arm-trusted-firmware-rockchip
+  ATF:=rk3399_bl31.elf
 endef
 
 define U-Boot/armsom-rk3308
